@@ -4,3 +4,17 @@
   --color-primary: red;
   --color-secondary: blue;
 }
+
+body {
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
+  color: #f3f4f6;
+  background-color: #0d0f12;
+}

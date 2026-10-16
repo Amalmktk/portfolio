@@ -1,12 +1,16 @@
-import heroImg from './assets/hero.png';
-import Dashboard from '@containers/dashboard/Dashboard';
+import CursorGold from '@components/CursorGold';
+import Header from '@components/Header';
+import SocialRail from '@components/SocialRail';
+import Home from '@containers/home/Home';
 
 const App = () => {
   return (
-    <div>
-      <img src={heroImg} className="base" width="170" height="179" alt="" />
-      <Dashboard />
-    </div>
+    <>
+      <CursorGold />
+      <Header />
+      <SocialRail />
+      <Home />
+    </>
   );
 };
 
