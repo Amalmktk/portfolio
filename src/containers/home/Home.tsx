@@ -1,12 +1,10 @@
 import Background from '@components/Background';
 import Contact from './components/Contact/Contact';
+import Experience from './components/Experience/Experience';
 import Expertise from './components/Expertise/Expertise';
 import Hero from './components/Hero/Hero';
-
-const PLACEHOLDER_SECTIONS = [
-  { id: 'work', title: 'Work' },
-  { id: 'projects', title: 'Projects' },
-];
+import Projects from './components/Projects/Projects';
+import Writing from './components/Writing/Writing';
 
 const Home = () => {
   return (
@@ -14,17 +12,9 @@ const Home = () => {
       <Background />
       <Hero />
       <Expertise />
-      {PLACEHOLDER_SECTIONS.map((section) => (
-        <section
-          key={section.id}
-          id={section.id}
-          className="flex min-h-dvh w-full scroll-mt-16 items-center justify-center"
-        >
-          <h2 className="text-3xl font-semibold text-zinc-300">
-            {section.title}
-          </h2>
-        </section>
-      ))}
+      <Experience />
+      <Projects />
+      <Writing />
       <Contact />
     </main>
   );

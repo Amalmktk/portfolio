@@ -3,7 +3,7 @@ import { FaLinkedin } from 'react-icons/fa';
 import { SiDevdotto, SiGithub, SiMedium, SiNpm } from 'react-icons/si';
 
 // TODO: replace with your real email address
-export const EMAIL = 'your.email@example.com';
+export const EMAIL = 'amalmktk@gmail.com';
 
 export interface SocialLink {
   label: string;

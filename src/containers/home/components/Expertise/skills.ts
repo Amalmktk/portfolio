@@ -1,6 +1,7 @@
 import type { IconType } from 'react-icons';
 import {
   SiCss,
+  SiGit,
   SiHtml5,
   SiJavascript,
   SiJest,
@@ -38,4 +39,5 @@ export const SKILLS: Skill[] = [
   { name: 'CSS', icon: SiCss, color: '#663399' },
   { name: 'npm', icon: SiNpm, color: '#CB3837' },
   { name: 'Jest', icon: SiJest, color: '#C21325' },
+  { name: 'Git', icon: SiGit, color: '#F05032' },
 ];

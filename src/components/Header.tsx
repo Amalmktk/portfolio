@@ -4,8 +4,9 @@ import { FaBars, FaTimes } from 'react-icons/fa';
 const NAV_ITEMS = [
   { id: 'about', label: 'About' },
   { id: 'expertise', label: 'Expertise' },
-  { id: 'work', label: 'Work' },
+  { id: 'experience', label: 'Experience' },
   { id: 'projects', label: 'Projects' },
+  { id: 'writing', label: 'Writing' },
 ];
 const CONTACT_ID = 'contact';
 const SECTION_IDS = [...NAV_ITEMS.map((item) => item.id), CONTACT_ID];
