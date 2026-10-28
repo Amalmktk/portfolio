@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { FaBars, FaTimes } from 'react-icons/fa';
+import { useRenderMonitor } from 'react-render-pulse';
 
 const NAV_ITEMS = [
   { id: 'about', label: 'About' },
@@ -14,6 +15,8 @@ const SECTION_IDS = [...NAV_ITEMS.map((item) => item.id), CONTACT_ID];
 const TAGLINE = 'Amal Muraleedharan · Software Architect, Frontend';
 
 const Header = () => {
+  // Counts every header re-render (it updates as you scroll between sections)
+  useRenderMonitor('header');
   const [activeSection, setActiveSection] = useState<string | null>(null);
   // Underline direction, inferred from section order (index increases = down)
   const [scrollDirection, setScrollDirection] = useState<'down' | 'up'>('down');
