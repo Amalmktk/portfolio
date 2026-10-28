@@ -25,7 +25,7 @@ export const PROJECTS: Project[] = [
     title: 'react-render-pulse',
     eyebrow: 'Open-source npm packages',
     description:
-      'Real-user render performance monitoring for React: finds the components that slow an app down on visitors’ own devices, for about 10 µs per measured render. A client, a collector and a viewer; it powers the live section below.',
+      'Real-user render performance monitoring for React: finds the components that slow an app down on visitors’ own devices, for about 10 µs per measured render. A client, a collector and a viewer; this site uses it to measure itself.',
     icon: LuActivity,
     install: 'npm i react-render-pulse',
     tags: ['React', 'TypeScript', 'Performance', 'Postgres'],

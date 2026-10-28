@@ -8,12 +8,12 @@ export type StatsState =
   | { status: 'error' }
   | { status: 'ready'; data: PerformanceStats };
 
-// Fetches the live stats once `enabled` turns true (the section scrolled into view)
-export const usePerformanceStats = (enabled: boolean): StatsState => {
+// Fetches the live stats once, on mount. The response is cached by Vercel's CDN
+// for an hour, so this rarely reaches the database.
+export const usePerformanceStats = (): StatsState => {
   const [state, setState] = useState<StatsState>({ status: 'loading' });
 
   useEffect(() => {
-    if (!enabled) return;
     const controller = new AbortController();
 
     fetch(STATS_URL, { signal: controller.signal })
@@ -27,7 +27,7 @@ export const usePerformanceStats = (enabled: boolean): StatsState => {
       });
 
     return () => controller.abort();
-  }, [enabled]);
+  }, []);
 
   return state;
 };

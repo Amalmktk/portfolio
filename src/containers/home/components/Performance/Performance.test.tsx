@@ -1,11 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import type { PerformanceStats } from '@/types/performance';
 import Performance from './Performance';
-
-// Pretend the section is on screen, so it fetches immediately
-vi.mock('@hooks/useInView', () => ({
-  useInView: () => ({ ref: { current: null }, inView: true }),
-}));
 
 const stats: PerformanceStats = {
   updatedAt: '2026-10-28T00:00:00.000Z',
@@ -72,23 +67,29 @@ describe('Performance section', () => {
     );
   });
 
-  it('says it is collecting before the first daily update', async () => {
-    mockFetch(Response.json({ ...stats, pageViews: 0 }));
-    render(<Performance />);
-
-    expect(
-      await screen.findByText(
-        /first numbers appear after the first daily update/
-      )
-    ).toBeInTheDocument();
+  it('renders nothing while loading', () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(
+      () => new Promise<Response>(() => {})
+    );
+    const { container } = render(<Performance />);
+    expect(container).toBeEmptyDOMElement();
   });
 
-  it('degrades gracefully when the API is unavailable', async () => {
-    mockFetch(new Response(null, { status: 503 }));
-    render(<Performance />);
+  it('stays hidden until there is data', async () => {
+    mockFetch(Response.json({ ...stats, pageViews: 0 }));
+    const { container } = render(<Performance />);
 
-    expect(
-      await screen.findByText("Live data isn't available right now.")
-    ).toBeInTheDocument();
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('stays hidden when the API is unavailable', async () => {
+    mockFetch(new Response(null, { status: 503 }));
+    const { container } = render(<Performance />);
+
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(container).toBeEmptyDOMElement();
   });
 });

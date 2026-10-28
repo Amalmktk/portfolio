@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import Section from '@components/Section';
 import SectionHeading from '@components/SectionHeading';
-import { useInView } from '@hooks/useInView';
 import type { DeviceClass, PerformanceStats } from '@/types/performance';
 import { usePerformanceStats } from './usePerformanceStats';
 
@@ -176,84 +175,70 @@ const Devices = ({ devices }: { devices: PerformanceStats['devices'] }) => {
   );
 };
 
-const Message = ({ children }: { children: ReactNode }) => (
-  <p className="py-16 text-center text-sm text-zinc-400">{children}</p>
-);
-
 const Performance = () => {
-  const { ref, inView } = useInView<HTMLDivElement>(0.1);
-  const stats = usePerformanceStats(inView);
+  const stats = usePerformanceStats();
 
-  let content: ReactNode;
-  if (stats.status === 'loading') {
-    content = <Message>Loading live data…</Message>;
-  } else if (stats.status === 'error') {
-    content = <Message>Live data isn't available right now.</Message>;
-  } else if (stats.data.pageViews === 0) {
-    content = (
-      <Message>
-        Collecting data. The first numbers appear after the first daily update.
-      </Message>
-    );
-  } else {
-    const { data } = stats;
-    content = (
-      <div className="flex flex-col gap-6">
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <Stat title="Page views" value={compact(data.pageViews)} />
-          <Stat title="p75 render" value={ms(data.p75)} />
-          <Stat title="Slow renders" value={percent(data.slowShare)} />
-          <Stat
-            title="Long tasks / view"
-            value={data.longTasksPerView.toFixed(2)}
-          />
-        </div>
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card title="Render time by section">
-            {data.areas.length > 0 ? (
-              <SectionRanges areas={data.areas} />
-            ) : (
-              <p className="text-sm text-zinc-400">
-                Sections appear once each has {data.minSamples} measurements.
-              </p>
-            )}
-            {data.areas.length > 0 && data.hiddenAreas > 0 && (
-              <p className="mt-3 text-xs text-zinc-500">
-                {data.hiddenAreas} more still collecting ({data.minSamples}{' '}
-                measurements needed).
-              </p>
-            )}
-          </Card>
-          <Card title="p75 render time by day">
-            <DailyTrend days={data.trend} />
-          </Card>
-        </div>
-        <div className="grid gap-6 md:grid-cols-2">
-          {data.devices.length > 0 && (
-            <Card title="By device">
-              <Devices devices={data.devices} />
-            </Card>
-          )}
-          <Card title="How to read this">
-            <ul className="flex flex-col gap-2 text-sm leading-relaxed text-zinc-400">
-              <li>
-                <span className="text-zinc-200">p50, p75, p95:</span> half,
-                three in four, and 19 in 20 renders were faster than this.
-              </li>
-              <li>
-                <span className="text-zinc-200">16 ms</span> is one frame at 60
-                fps. Renders slower than that can cause visible jank.
-              </li>
-              <li>
-                <span className="text-zinc-200">Long tasks</span> block the main
-                thread for 50 ms or more, delaying clicks and scrolling.
-              </li>
-            </ul>
-          </Card>
-        </div>
+  // The section only appears once there's real data: nothing while loading,
+  // before the first daily update, or if the stats can't be loaded
+  if (stats.status !== 'ready' || stats.data.pageViews === 0) return null;
+
+  const { data } = stats;
+  const content = (
+    <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <Stat title="Page views" value={compact(data.pageViews)} />
+        <Stat title="p75 render" value={ms(data.p75)} />
+        <Stat title="Slow renders" value={percent(data.slowShare)} />
+        <Stat
+          title="Long tasks / view"
+          value={data.longTasksPerView.toFixed(2)}
+        />
       </div>
-    );
-  }
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card title="Render time by section">
+          {data.areas.length > 0 ? (
+            <SectionRanges areas={data.areas} />
+          ) : (
+            <p className="text-sm text-zinc-400">
+              Sections appear once each has {data.minSamples} measurements.
+            </p>
+          )}
+          {data.areas.length > 0 && data.hiddenAreas > 0 && (
+            <p className="mt-3 text-xs text-zinc-500">
+              {data.hiddenAreas} more still collecting ({data.minSamples}{' '}
+              measurements needed).
+            </p>
+          )}
+        </Card>
+        <Card title="p75 render time by day">
+          <DailyTrend days={data.trend} />
+        </Card>
+      </div>
+      <div className="grid gap-6 md:grid-cols-2">
+        {data.devices.length > 0 && (
+          <Card title="By device">
+            <Devices devices={data.devices} />
+          </Card>
+        )}
+        <Card title="How to read this">
+          <ul className="flex flex-col gap-2 text-sm leading-relaxed text-zinc-400">
+            <li>
+              <span className="text-zinc-200">p50, p75, p95:</span> half, three
+              in four, and 19 in 20 renders were faster than this.
+            </li>
+            <li>
+              <span className="text-zinc-200">16 ms</span> is one frame at 60
+              fps. Renders slower than that can cause visible jank.
+            </li>
+            <li>
+              <span className="text-zinc-200">Long tasks</span> block the main
+              thread for 50 ms or more, delaying clicks and scrolling.
+            </li>
+          </ul>
+        </Card>
+      </div>
+    </div>
+  );
 
   return (
     <Section id="performance">
@@ -275,9 +260,7 @@ const Performance = () => {
         </a>
         , my open-source package. Updated daily, last 30 days.
       </p>
-      <div ref={ref} className="w-full">
-        {content}
-      </div>
+      <div className="w-full">{content}</div>
       <p className="max-w-2xl text-center text-xs text-zinc-500">
         Anonymous: no cookies, IP addresses or personal data are stored, and raw
         measurements are deleted after 30 days.
