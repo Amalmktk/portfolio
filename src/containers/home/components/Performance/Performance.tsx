@@ -49,7 +49,7 @@ const SectionBars = ({ areas }: { areas: PerformanceSummary['areas'] }) => {
           <span className="truncate text-zinc-300">{label(area.id)}</span>
           <span className="h-2 rounded-r bg-white/5" aria-hidden="true">
             <span
-              className="block h-full rounded-r bg-cyan-400"
+              className="block h-full rounded-r bg-green-400"
               style={{ width: `${Math.max((area.p75 / max) * 100, 2)}%` }}
             />
           </span>
@@ -88,7 +88,7 @@ const DailyTrend = ({ days }: { days: PerformanceSummary['byDay'] }) => {
               className="flex h-full min-w-0 flex-1 items-end"
             >
               <span
-                className="block w-full max-w-6 rounded-t bg-cyan-400 transition-colors hover:bg-cyan-300"
+                className="block w-full max-w-6 rounded-t bg-green-400 transition-colors hover:bg-green-300"
                 style={{ height: `${Math.max((day.p75 / max) * 100, 3)}%` }}
               />
             </li>
@@ -177,13 +177,18 @@ const Performance = () => {
     <Section id="performance">
       <SectionHeading eyebrow="Live" title="How this page performs" />
       <p className="max-w-2xl text-center text-sm leading-relaxed text-zinc-400">
+        {/* Pulsing "live" dot; holds still for reduced-motion users */}
+        <span className="relative mr-2 inline-flex h-2 w-2 align-middle">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75 motion-reduce:hidden" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-green-400" />
+        </span>
         Real render timings from visitors' devices over the last 30 days,
         measured by{' '}
         <a
           href={PACKAGE_URL}
           target="_blank"
           rel="noreferrer"
-          className="text-cyan-300 underline-offset-4 hover:underline focus:outline-none focus-visible:underline"
+          className="text-green-300 underline-offset-4 hover:underline focus:outline-none focus-visible:underline"
         >
           react-render-pulse
         </a>
