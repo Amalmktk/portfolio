@@ -11,6 +11,9 @@ const isProduction = ['itzamal.in', 'www.itzamal.in'].includes(
 );
 initRenderPulse({
   endpoint: isProduction ? '/api/render-pulse' : undefined,
+  // Send only when the page is hidden, and keep batches under the collector's 20 KB limit
+  flushIntervalMs: 0,
+  maxPayloadBytes: 20_000,
   // Vercel exposes the commit as VITE_VERCEL_GIT_COMMIT_SHA, so releases can be compared
   appVersion: import.meta.env.VITE_VERCEL_GIT_COMMIT_SHA?.slice(0, 7),
 });

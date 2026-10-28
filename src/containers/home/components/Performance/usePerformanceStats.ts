@@ -1,25 +1,25 @@
 import { useEffect, useState } from 'react';
-import type { PerformanceSummary } from '@/types/performance';
+import type { PerformanceStats } from '@/types/performance';
 
-const SUMMARY_URL = '/api/performance';
+const STATS_URL = '/api/render-pulse-stats';
 
-export type SummaryState =
+export type StatsState =
   | { status: 'loading' }
   | { status: 'error' }
-  | { status: 'ready'; data: PerformanceSummary };
+  | { status: 'ready'; data: PerformanceStats };
 
-// Fetches the live summary once `enabled` turns true (the section scrolled into view)
-export const usePerformanceSummary = (enabled: boolean): SummaryState => {
-  const [state, setState] = useState<SummaryState>({ status: 'loading' });
+// Fetches the live stats once `enabled` turns true (the section scrolled into view)
+export const usePerformanceStats = (enabled: boolean): StatsState => {
+  const [state, setState] = useState<StatsState>({ status: 'loading' });
 
   useEffect(() => {
     if (!enabled) return;
     const controller = new AbortController();
 
-    fetch(SUMMARY_URL, { signal: controller.signal })
+    fetch(STATS_URL, { signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return response.json() as Promise<PerformanceSummary>;
+        return response.json() as Promise<PerformanceStats>;
       })
       .then((data) => setState({ status: 'ready', data }))
       .catch(() => {

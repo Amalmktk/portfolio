@@ -10,7 +10,8 @@
     "format": "prettier --write .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.4",
@@ -21,7 +22,6 @@
     "react-icons": "^5.7.0",
     "react-render-pulse": "^1.0.2",
     "react-render-pulse-collector": "^1.0.1",
-    "react-render-pulse-viewer": "^1.0.1",
     "tailwindcss": "^4.2.4"
   },
   "devDependencies": {
@@ -33,6 +33,7 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/babel__core": "^7.20.5",
     "@types/node": "^24.12.2",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
