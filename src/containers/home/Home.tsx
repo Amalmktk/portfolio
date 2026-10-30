@@ -9,7 +9,9 @@ import Projects from './components/Projects/Projects';
 import Writing from './components/Writing/Writing';
 
 // Each section is a render-pulse area, so the Performance section can show
-// how long each one takes to render on visitors' devices
+// how long each one takes to render on visitors' devices. Experience and
+// Performance have state of their own, so they put the monitor inside
+// themselves: a monitor only sees updates that re-render it.
 const Home = () => {
   return (
     <main className="relative flex flex-col items-center">
@@ -22,15 +24,11 @@ const Home = () => {
       <RenderMonitor id="expertise">
         <Expertise />
       </RenderMonitor>
-      <RenderMonitor id="experience">
-        <Experience />
-      </RenderMonitor>
+      <Experience />
       <RenderMonitor id="projects">
         <Projects />
       </RenderMonitor>
-      <RenderMonitor id="performance">
-        <Performance />
-      </RenderMonitor>
+      <Performance />
       <RenderMonitor id="writing">
         <Writing />
       </RenderMonitor>

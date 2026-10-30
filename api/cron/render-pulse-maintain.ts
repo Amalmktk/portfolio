@@ -7,43 +7,86 @@ const dayRange = (column: string) =>
   `${column} >= ($1::date::timestamp at time zone '${TZ}')
    and ${column} < (($1::date + 1)::timestamp at time zone '${TZ}')`;
 
-const ROLLUP_AREAS = `
+// Rolls up each section's timings for the day into `table`, one row per
+// section and `key` (render_daily by device class, render_daily_versions by release)
+const rollupAreas = (table: string, key: string, keyExpr: string) => `
   with base as (
-    select b.device_class, a.area_id, a.renders, a.slow_renders, a.hist, a.min_ms, a.max_ms
+    select ${keyExpr} as ${key}, a.area_id, a.renders, a.mounts, a.slow_renders,
+           a.total_ms, a.hist, a.min_ms, a.max_ms
       from render_areas a join render_batches b on b.id = a.batch_id
      where ${dayRange('b.received_at')}
   ),
   buckets as (
-    select area_id, device_class, i, sum(v)::bigint as total
+    select area_id, ${key}, i, sum(v)::bigint as total
       from base, unnest(hist) with ordinality as u(v, i)
-     group by area_id, device_class, i
+     group by area_id, ${key}, i
   ),
   totals as (
-    select area_id, device_class, count(*) as samples, sum(renders) as renders,
-           sum(slow_renders) as slow_renders, min(min_ms) as min_ms, max(max_ms) as max_ms
-      from base group by area_id, device_class
+    select area_id, ${key}, count(*) as samples, sum(renders) as renders,
+           sum(mounts) as mounts, sum(slow_renders) as slow_renders,
+           sum(total_ms) as total_ms, min(min_ms) as min_ms, max(max_ms) as max_ms
+      from base group by area_id, ${key}
   )
-  insert into render_daily
-    (day, area_id, device_class, samples, renders, slow_renders, hist, min_ms, max_ms)
-  select $1::date, t.area_id, t.device_class, t.samples, t.renders, t.slow_renders,
+  insert into ${table}
+    (day, area_id, ${key}, samples, renders, mounts, slow_renders, total_ms, hist,
+     min_ms, max_ms)
+  select $1::date, t.area_id, t.${key}, t.samples, t.renders, t.mounts,
+         t.slow_renders, t.total_ms,
          (select array_agg(s.total order by s.i) from buckets s
-           where s.area_id = t.area_id and s.device_class = t.device_class),
+           where s.area_id = t.area_id and s.${key} = t.${key}),
          t.min_ms, t.max_ms
     from totals t
-  on conflict (day, area_id, device_class) do update set
+  on conflict (day, area_id, ${key}) do update set
     samples = excluded.samples, renders = excluded.renders,
-    slow_renders = excluded.slow_renders, hist = excluded.hist,
+    mounts = excluded.mounts, slow_renders = excluded.slow_renders,
+    total_ms = excluded.total_ms, hist = excluded.hist,
     min_ms = excluded.min_ms, max_ms = excluded.max_ms`;
 
+const ROLLUP_AREAS = rollupAreas(
+  'render_daily',
+  'device_class',
+  'b.device_class'
+);
+const ROLLUP_VERSIONS = rollupAreas(
+  'render_daily_versions',
+  'app_version',
+  `coalesce(b.app_version, 'unknown')`
+);
+
 const ROLLUP_PAGES = `
-  insert into render_daily_pages (day, device_class, page_views, long_tasks, long_task_ms)
+  insert into render_daily_pages
+    (day, device_class, page_views, long_tasks, long_task_ms, long_frames, long_frame_ms)
   select $1::date, device_class, count(*) filter (where first_batch),
-         sum(long_tasks), sum(long_task_ms)
+         sum(long_tasks), sum(long_task_ms), sum(long_frames), sum(long_frame_ms)
     from render_batches where ${dayRange('received_at')}
    group by device_class
   on conflict (day, device_class) do update set
     page_views = excluded.page_views, long_tasks = excluded.long_tasks,
-    long_task_ms = excluded.long_task_ms`;
+    long_task_ms = excluded.long_task_ms, long_frames = excluded.long_frames,
+    long_frame_ms = excluded.long_frame_ms`;
+
+// '' stands for blocks outside any React render
+const ROLLUP_BLOCKS = `
+  insert into render_daily_blocks
+    (day, kind, area_id, device_class, count, total_ms, max_ms)
+  select $1::date, k.kind, coalesce(k.area_id, ''), b.device_class, sum(k.count),
+         sum(k.total_ms), max(k.max_ms)
+    from render_blocks k join render_batches b on b.id = k.batch_id
+   where ${dayRange('b.received_at')}
+   group by k.kind, coalesce(k.area_id, ''), b.device_class
+  on conflict (day, kind, area_id, device_class) do update set
+    count = excluded.count, total_ms = excluded.total_ms, max_ms = excluded.max_ms`;
+
+// Replaced as a whole on each run, so it takes two statements
+const CLEAR_WORST = `delete from render_daily_worst where day = $1::date`;
+const ROLLUP_WORST = `
+  insert into render_daily_worst (day, rank, area_id, device_class, phase, ms)
+  select $1::date, row_number() over (order by w.ms desc), w.area_id,
+         b.device_class, w.phase, w.ms
+    from render_worst w join render_batches b on b.id = w.batch_id
+   where ${dayRange('b.received_at')}
+   order by w.ms desc
+   limit 20`;
 
 // Daily maintenance, run by Vercel Cron at 01:00 IST: rolls up the last two
 // days (re-running is safe, so late batches are included), then deletes raw
@@ -73,7 +116,11 @@ export async function GET(request: Request): Promise<Response> {
     const rolledUp: Record<string, number> = {};
     for (const day of days) {
       const areas = await pool.query(ROLLUP_AREAS, [day]);
+      await pool.query(ROLLUP_VERSIONS, [day]);
       await pool.query(ROLLUP_PAGES, [day]);
+      await pool.query(ROLLUP_BLOCKS, [day]);
+      await pool.query(CLEAR_WORST, [day]);
+      await pool.query(ROLLUP_WORST, [day]);
       rolledUp[day] = (areas as { rowCount?: number }).rowCount ?? 0;
     }
 
@@ -86,6 +133,15 @@ export async function GET(request: Request): Promise<Response> {
       ),
       dailyPageRows: await count(
         `delete from render_daily_pages where day < current_date - interval '2 years'`
+      ),
+      dailyBlockRows: await count(
+        `delete from render_daily_blocks where day < current_date - interval '2 years'`
+      ),
+      dailyWorstRows: await count(
+        `delete from render_daily_worst where day < current_date - interval '2 years'`
+      ),
+      dailyVersionRows: await count(
+        `delete from render_daily_versions where day < current_date - interval '2 years'`
       ),
       rateLimitRows: await count(
         `delete from render_rate_limits where window_start < now() - interval '1 day'`
