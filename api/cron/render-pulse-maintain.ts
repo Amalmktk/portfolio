@@ -53,6 +53,35 @@ const ROLLUP_VERSIONS = rollupAreas(
   `coalesce(b.app_version, 'unknown')`
 );
 
+// Adds one phase's histogram and fastest/slowest render to the day's render_daily
+// rows ('mount' = first renders, 'update' = later ones). Only batches that carry the
+// split count, so a section's phase renders can be fewer than its total renders.
+// Runs after ROLLUP_AREAS, which creates the rows.
+const rollupPhase = (phase: 'mount' | 'update') => `
+  with base as (
+    select b.device_class, a.area_id, a.${phase}_hist as hist,
+           a.${phase}_min_ms as min_ms, a.${phase}_max_ms as max_ms
+      from render_areas a join render_batches b on b.id = a.batch_id
+     where a.${phase}_hist is not null and ${dayRange('b.received_at')}
+  ),
+  buckets as (
+    select area_id, device_class, i, sum(v)::bigint as total
+      from base, unnest(hist) with ordinality as u(v, i)
+     group by area_id, device_class, i
+  ),
+  totals as (
+    select area_id, device_class, min(min_ms) as min_ms, max(max_ms) as max_ms
+      from base group by area_id, device_class
+  )
+  update render_daily d set
+    ${phase}_hist = (select array_agg(s.total order by s.i) from buckets s
+                      where s.area_id = t.area_id and s.device_class = t.device_class),
+    ${phase}_min_ms = t.min_ms, ${phase}_max_ms = t.max_ms
+    from totals t
+   where d.day = $1::date and d.area_id = t.area_id and d.device_class = t.device_class`;
+const ROLLUP_MOUNTS = rollupPhase('mount');
+const ROLLUP_UPDATES = rollupPhase('update');
+
 const ROLLUP_PAGES = `
   insert into render_daily_pages
     (day, device_class, page_views, long_tasks, long_task_ms, long_frames, long_frame_ms)
@@ -116,6 +145,8 @@ export async function GET(request: Request): Promise<Response> {
     const rolledUp: Record<string, number> = {};
     for (const day of days) {
       const areas = await pool.query(ROLLUP_AREAS, [day]);
+      await pool.query(ROLLUP_MOUNTS, [day]);
+      await pool.query(ROLLUP_UPDATES, [day]);
       await pool.query(ROLLUP_VERSIONS, [day]);
       await pool.query(ROLLUP_PAGES, [day]);
       await pool.query(ROLLUP_BLOCKS, [day]);
