@@ -318,6 +318,74 @@ const RendersPerView = ({
   );
 };
 
+// p75 of first renders next to p75 of updates for each section that has both,
+// on one scale, so a costly mount or a costly update stands out. Sorted by the
+// larger of the two.
+const FirstVsUpdates = ({ areas }: { areas: PerformanceStats['areas'] }) => {
+  const rows = areas
+    .flatMap((area) =>
+      area.mount && area.update
+        ? [{ id: area.id, mount: area.mount, update: area.update }]
+        : []
+    )
+    .sort(
+      (a, b) =>
+        Math.max(b.mount.p75, b.update.p75) -
+        Math.max(a.mount.p75, a.update.p75)
+    );
+  const scale = Math.max(
+    ...rows.flatMap((r) => [r.mount.p75, r.update.p75]),
+    1
+  );
+  const width = (value: number) => `${Math.max((value / scale) * 100, 2)}%`;
+  return (
+    <div>
+      <ul className="flex flex-col gap-3">
+        {rows.map((row) => (
+          <li
+            key={row.id}
+            className="grid grid-cols-[6.5rem_1fr_7rem] items-center gap-3 text-sm"
+            aria-label={`${label(row.id)}: first renders p75 ${ms(row.mount.p75)}, updates p75 ${ms(row.update.p75)}`}
+          >
+            <span className="truncate text-zinc-300">{label(row.id)}</span>
+            <span className="flex flex-col gap-1" aria-hidden="true">
+              <span className="h-1.5 rounded-r bg-white/5">
+                <span
+                  className="block h-full rounded-r bg-green-400"
+                  style={{ width: width(row.mount.p75) }}
+                />
+              </span>
+              <span className="h-1.5 rounded-r bg-white/5">
+                <span
+                  className="block h-full rounded-r bg-green-400/35"
+                  style={{ width: width(row.update.p75) }}
+                />
+              </span>
+            </span>
+            <span className="text-right font-mono text-xs text-zinc-300 tabular-nums">
+              {ms(row.mount.p75)} / {ms(row.update.p75)}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
+        <span>
+          <span className="mr-1.5 inline-block h-2 w-4 rounded-full bg-green-400 align-middle" />
+          First render p75
+        </span>
+        <span>
+          <span className="mr-1.5 inline-block h-2 w-4 rounded-full bg-green-400/35 align-middle" />
+          Update p75
+        </span>
+      </p>
+      <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+        Only visits measured since the split was added, so these cover fewer
+        renders than the section totals.
+      </p>
+    </div>
+  );
+};
+
 const SlowestRenders = ({ worst }: { worst: PerformanceStats['worst'] }) => (
   <ol className="flex flex-col gap-3">
     {worst.map((render, i) => (
@@ -439,6 +507,11 @@ const Performance = () => {
               <RendersPerView areas={data.areas} pageViews={data.pageViews} />
             </Card>
           )}
+          {data.areas.some((area) => area.mount && area.update) && (
+            <Card title="First renders vs updates">
+              <FirstVsUpdates areas={data.areas} />
+            </Card>
+          )}
           {data.worst.length > 0 && (
             <Card title="Slowest renders">
               <SlowestRenders worst={data.worst} />
@@ -473,7 +546,8 @@ const Performance = () => {
               </li>
               <li>
                 <span className="text-zinc-200">Section timings</span> include
-                first renders and updates together.
+                first renders and updates together. “First renders vs updates”
+                splits them once there is enough data.
               </li>
             </ul>
           </Card>

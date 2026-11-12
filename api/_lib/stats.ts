@@ -4,6 +4,7 @@ import type {
   DeviceClass,
   PerformanceHeadline,
   PerformanceStats,
+  PhaseStats,
   Percentiles,
   ReleaseComparison,
   WorstRender,
@@ -27,6 +28,14 @@ interface TimingRow {
 
 export interface DailyAreaRow extends TimingRow {
   device_class: DeviceClass;
+  // First renders and updates apart (react-render-pulse 1.1). Null for days or
+  // batches measured before the split, so these cover fewer renders than `hist`.
+  mount_hist?: (number | string)[] | null;
+  mount_min_ms?: number | null;
+  mount_max_ms?: number | null;
+  update_hist?: (number | string)[] | null;
+  update_min_ms?: number | null;
+  update_max_ms?: number | null;
 }
 
 export interface DailyVersionRow extends TimingRow {
@@ -117,6 +126,27 @@ const groupBy = <R extends TimingRow, K>(rows: R[], keyOf: (row: R) => K) => {
     add(group, row);
   }
   return groups;
+};
+
+// One phase's merged timings for a section, from the rows that carry the split.
+// Left out below MIN_SAMPLES renders, like everything else: thin data misleads.
+const phaseStats = (
+  rows: DailyAreaRow[],
+  phase: 'mount' | 'update'
+): PhaseStats | undefined => {
+  const group = emptyGroup();
+  for (const row of rows) {
+    const hist = row[`${phase}_hist`];
+    const min = row[`${phase}_min_ms`];
+    const max = row[`${phase}_max_ms`];
+    if (!hist || min == null || max == null) continue;
+    hist.forEach((n, i) => (group.hist[i] = (group.hist[i] ?? 0) + Number(n)));
+    group.renders += hist.reduce<number>((sum, n) => sum + Number(n), 0);
+    group.min = Math.min(group.min, min);
+    group.max = Math.max(group.max, max);
+  }
+  if (group.renders < MIN_SAMPLES) return undefined;
+  return { renders: group.renders, ...percentiles(group) };
 };
 
 const share = (part: number, whole: number) => (whole === 0 ? 0 : part / whole);
@@ -230,11 +260,16 @@ export const buildStats = (
         samples: deviceGroup.samples,
       };
     }
+    const rows = areaRows.filter((r) => r.area_id === id);
+    const mount = phaseStats(rows, 'mount');
+    const update = phaseStats(rows, 'update');
     areas.push({
       id,
       samples: group.samples,
       renders: group.renders,
       mounts: group.mounts,
+      ...(mount && { mount }),
+      ...(update && { update }),
       slowShare: share(group.slow, group.renders),
       ...percentiles(group),
       byDevice,

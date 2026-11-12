@@ -9,12 +9,22 @@ export interface Percentiles {
   p95: number;
 }
 
+// One phase of a section: first renders or later renders (updates)
+export interface PhaseStats extends Percentiles {
+  renders: number;
+}
+
 export interface AreaStats extends Percentiles {
   id: string;
   samples: number;
   renders: number;
   // First renders; the rest of `renders` are updates
   mounts: number;
+  // The same timings for first renders and for updates alone. Only from visits
+  // measured with react-render-pulse 1.1 or later, so they cover fewer renders
+  // than the totals above, and are left out until there are enough of them.
+  mount?: PhaseStats;
+  update?: PhaseStats;
   // Share of renders slower than one frame (16 ms), 0–1
   slowShare: number;
   byDevice: Partial<Record<DeviceClass, { p75: number; samples: number }>>;

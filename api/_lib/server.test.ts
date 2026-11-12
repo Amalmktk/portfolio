@@ -136,6 +136,71 @@ describe('buildStats', () => {
     expect(stats.range).toEqual({ from: '2026-10-27', to: '2026-10-28' });
   });
 
+  describe('first renders and updates', () => {
+    // 40 slow first renders (16–24 ms) and 200 fast updates (4–8 ms): the totals
+    // look fine at p50 but the split shows where the cost is
+    const split = (overrides: Partial<DailyAreaRow> = {}) =>
+      row({
+        renders: 240,
+        mounts: 40,
+        mount_hist: hist(6, 40),
+        mount_min_ms: 17,
+        mount_max_ms: 23,
+        update_hist: hist(3, 200),
+        update_min_ms: 4.5,
+        update_max_ms: 7.5,
+        ...overrides,
+      });
+
+    it('reports each phase on its own, from merged histograms', () => {
+      const stats = buildStats({
+        areas: [split(), split({ day: '2026-10-28', device_class: 'low' })],
+        pages: [],
+      });
+      const area = stats.areas[0]!;
+
+      expect(area.mount?.renders).toBe(80);
+      expect(area.update?.renders).toBe(400);
+      expect(area.mount!.p75).toBeGreaterThan(16);
+      expect(area.update!.p95).toBeLessThanOrEqual(8);
+    });
+
+    it('leaves a phase out below the minimum number of renders', () => {
+      const stats = buildStats({
+        areas: [
+          split({
+            mount_hist: hist(6, MIN_SAMPLES - 1),
+          }),
+        ],
+        pages: [],
+      });
+
+      expect(stats.areas[0]?.mount).toBeUndefined();
+      expect(stats.areas[0]?.update?.renders).toBe(200);
+    });
+
+    it('uses only the rows that have the split, and copes with strings', () => {
+      const stats = buildStats({
+        areas: [
+          split({ mount_hist: hist(6, 40).map(String) }),
+          // an older day, measured before the split existed
+          row({ day: '2026-10-20', mount_hist: null, update_hist: null }),
+        ],
+        pages: [],
+      });
+
+      expect(stats.areas[0]?.mount?.renders).toBe(40);
+      // the older day still counts toward the totals
+      expect(stats.areas[0]?.renders).toBe(340);
+    });
+
+    it('omits both when no row has the split', () => {
+      const stats = buildStats({ areas: [row({})], pages: [] });
+      expect(stats.areas[0]).not.toHaveProperty('mount');
+      expect(stats.areas[0]).not.toHaveProperty('update');
+    });
+  });
+
   it('hides areas with too few samples', () => {
     const stats = buildStats({
       areas: [row({ samples: MIN_SAMPLES - 1 })],

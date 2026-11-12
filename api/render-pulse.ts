@@ -79,6 +79,13 @@ const tableStorage: Storage = {
           'hist',
           'min_ms',
           'max_ms',
+          // First renders and updates apart; null from clients before 1.1
+          'mount_hist',
+          'mount_min_ms',
+          'mount_max_ms',
+          'update_hist',
+          'update_min_ms',
+          'update_max_ms',
         ],
         payload.areas.map((area) => [
           batchId,
@@ -90,6 +97,12 @@ const tableStorage: Storage = {
           area.hist,
           area.min,
           area.max,
+          area.phases?.mount?.hist ?? null,
+          area.phases?.mount?.min ?? null,
+          area.phases?.mount?.max ?? null,
+          area.phases?.update?.hist ?? null,
+          area.phases?.update?.min ?? null,
+          area.phases?.update?.max ?? null,
         ])
       );
 

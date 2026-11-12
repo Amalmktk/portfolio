@@ -120,6 +120,46 @@ describe('Performance section', () => {
     expect(screen.queryByText('Slowest renders')).not.toBeInTheDocument();
   });
 
+  it('splits first renders from updates once there is data for it', async () => {
+    const withSplit: PerformanceStats = {
+      ...stats,
+      areas: [
+        {
+          ...stats.areas[0]!,
+          mount: { renders: 60, p50: 8, p75: 14.2, p95: 22 },
+          update: { renders: 400, p50: 1, p75: 2.1, p95: 5 },
+        },
+        stats.areas[1]!,
+      ],
+    };
+    mockFetch(Response.json(withSplit));
+    render(<Performance />);
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Show all metrics' })
+    );
+    expect(screen.getByText('First renders vs updates')).toBeInTheDocument();
+    // only the section that has both phases is listed
+    expect(screen.getByText('14.2 ms / 2.1 ms')).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(
+        /Experience: first renders p75 14\.2 ms, updates p75 2\.1 ms/
+      )
+    ).toBeInTheDocument();
+  });
+
+  it('has no split card without the data', async () => {
+    mockFetch(Response.json(stats));
+    render(<Performance />);
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Show all metrics' })
+    );
+    expect(
+      screen.queryByText('First renders vs updates')
+    ).not.toBeInTheDocument();
+  });
+
   it('says so when no frame blocked the main thread', async () => {
     mockFetch(Response.json({ ...stats, blocks: [] }));
     render(<Performance />);

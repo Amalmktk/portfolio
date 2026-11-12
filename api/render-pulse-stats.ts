@@ -18,7 +18,9 @@ export async function GET(request: Request): Promise<Response> {
     const [areas, pages, blocks, worst, versions] = await Promise.all([
       pool.query(
         `select day::text as day, area_id, device_class, samples, renders,
-                mounts, slow_renders, hist, min_ms, max_ms
+                mounts, slow_renders, hist, min_ms, max_ms,
+                mount_hist, mount_min_ms, mount_max_ms,
+                update_hist, update_min_ms, update_max_ms
            from render_daily where day >= ${since}`
       ),
       pool.query(
