@@ -13,6 +13,22 @@ export interface Post {
 // Newest first
 export const POSTS: Post[] = [
   {
+    title:
+      'I Pointed My React Performance Tool at My Own Portfolio. The First Problem It Found Was Mine.',
+    summary:
+      'What react-render-pulse showed on real visitors of this site, and how a header that looked slow turned out to be a measurement mistake.',
+    date: 'Nov 2026',
+    readTime: '8 min read',
+    tags: ['React', 'Performance', 'Open source'],
+    links: [
+      {
+        label: 'Medium',
+        href: 'https://medium.com/@amalmktk/i-pointed-my-react-performance-tool-at-my-own-portfolio-the-first-problem-it-found-was-mine-494152650197',
+        icon: SiMedium,
+      },
+    ],
+  },
+  {
     title: 'React Explained: Why It Still Wins After a Decade',
     summary:
       'What React is, how it works under the hood, and where it fits next to Angular, Vue and Svelte.',
