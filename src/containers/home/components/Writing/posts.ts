@@ -14,6 +14,21 @@ export interface Post {
 export const POSTS: Post[] = [
   {
     title:
+      'AI Tools Compared 2026: Free Tiers, Prices, Limits and Features in One Place',
+    summary:
+      'The free tiers, prices, usage limits and features of popular AI tools in 2026, compared side by side in one place.',
+    date: 'Nov 2026',
+    tags: ['AI', 'Tools', 'Comparison'],
+    links: [
+      {
+        label: 'Medium',
+        href: 'https://medium.com/@amalmktk/ai-tools-compared-2026-free-tiers-prices-limits-and-features-in-one-place-2dd7ec406aec',
+        icon: SiMedium,
+      },
+    ],
+  },
+  {
+    title:
       'Micro Frontends Are an Organizational Tool Wearing a Technical Costume',
     summary:
       'A practical guide to what micro frontends are, when they are worth it, how to build them, and how to avoid turning your frontend into a distributed mess.',
