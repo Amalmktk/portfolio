@@ -18,12 +18,18 @@ export const POSTS: Post[] = [
     summary:
       'A practical guide to what micro frontends are, when they are worth it, how to build them, and how to avoid turning your frontend into a distributed mess.',
     date: 'Nov 2026',
+    readTime: '18 min read',
     tags: ['Micro-frontends', 'Architecture', 'Frontend'],
     links: [
       {
         label: 'Medium',
         href: 'https://medium.com/@amalmktk/micro-frontends-are-an-organizational-tool-wearing-a-technical-costume-57939285a944',
         icon: SiMedium,
+      },
+      {
+        label: 'dev.to',
+        href: 'https://dev.to/amalmktk/micro-frontends-are-an-organizational-tool-wearing-a-technical-costume-98c',
+        icon: SiDevdotto,
       },
     ],
   },
